@@ -4,6 +4,8 @@ import time
 import tkinter.font as TkFont
 import Viewimage
 
+##created by vlad
+
 class ViewFrame():
     db = DataBase.Database()
     

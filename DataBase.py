@@ -5,16 +5,29 @@ class Database():
     def __init__(self):
         self.con=sqlite3.connect(self.bdname)
         self.cur= self.con.cursor()
+        self.cur.execute("""CREATE TABLE IF NOT EXISTS genres(
+                    genre_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    genres_name TEXT NOT NULL, UNIQUE (genres_name))""")
+        
         self.cur.execute("""CREATE TABLE IF NOT EXISTS
                     films(
                     title TEXT NOT NULL,
-                    genre1 TEXT NOT NULL,
-                    genre2 TEXT NOT NULL,
+                    genre1_id INTEGER NOT NULL,
+                    genre2_id INTEGER NOT NULL,
                     year INTEGER NOT NULL,
-                    PRIMARY KEY(title, year))
-                    """)
+                    PRIMARY KEY(title, year),
+                    FOREIGN KEY (genre1_id) REFERENCES genres(genre_id),
+                    FOREIGN KEY (genre2_id) REFERENCES genres(genre_id)
+                    )""")
+
 
         self.con.commit()
+
+
+    def get_ganreid_by_name(self, genre):
+        if not self.cur.execute(f"""SELECT genre_id FROM genres WHERE genres_name ='{genre}'""").fetchone():
+            self.cur.execute(f"""INSERT INTO genres(genres_name) VALUES('{genre}')""")
+        return self.cur.execute(f"""SELECT genre_id FROM genres WHERE genres_name ='{genre}'""").fetchone()[0]
 
     def append(self, name, genre1, genre2, year):
         if name != '' and genre1 !='' and genre2 != '' and year !='':
@@ -22,8 +35,12 @@ class Database():
             genre1 = genre1.lower()
             genre2 = genre2.lower()
             year = year.lower()
+ 
+            genre1_id = self.get_ganreid_by_name(genre1)
+            genre2_id = self.get_ganreid_by_name(genre2)
+            
             self.cur.execute(f"""INSERT INTO films VALUES(
-                            '{name}', '{genre1}', '{genre2}', {year})""")
+                    '{name}', {genre1_id}, {genre2_id}, {year})""")
             
             self.con.commit()
             return True   

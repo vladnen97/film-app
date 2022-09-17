@@ -20,10 +20,23 @@ class Database():
                     FOREIGN KEY (genre2_id) REFERENCES genres(genre_id)
                     )""")
 
-
         self.con.commit()
 
+    class MyTuple:
+        def __init__(self, value):
+            self.value=value
 
+        def __str__(self):
+            return self.value[1]
+        
+
+    def get_all_genres(self):
+        result = list()
+        for i in self.cur.execute("""SELECT * FROM genres"""):
+            result.append(self.MyTuple(i))
+        return result
+
+        
     def get_ganreid_by_name(self, genre):
         if not self.cur.execute(f"""SELECT genre_id FROM genres WHERE genres_name ='{genre}'""").fetchone():
             self.cur.execute(f"""INSERT INTO genres(genres_name) VALUES('{genre}')""")

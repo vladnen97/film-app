@@ -29,31 +29,30 @@ class Database():
         def __str__(self):
             return self.value[1]
         
-
+    def update_genre_table(self, genre, add_or_del):
+        genre = genre.lower()
+        
+        if add_or_del:
+            self.cur.execute(f"""INSERT INTO genres(genres_name) VALUES('{genre}')""")
+        else:
+            self.cur.execute(f"""DELETE FROM genres WHERE genres_name = '{genre}' """)
+            
+        self.con.commit()
+        
     def get_all_genres(self):
         result = list()
         for i in self.cur.execute("""SELECT * FROM genres"""):
             result.append(self.MyTuple(i))
+            
+        self.con.commit()
         return result
-
-        
-    def get_ganreid_by_name(self, genre):
-        if not self.cur.execute(f"""SELECT genre_id FROM genres WHERE genres_name ='{genre}'""").fetchone():
-            self.cur.execute(f"""INSERT INTO genres(genres_name) VALUES('{genre}')""")
-        return self.cur.execute(f"""SELECT genre_id FROM genres WHERE genres_name ='{genre}'""").fetchone()[0]
 
     def append(self, name, genre1, genre2, year):
         if name != '' and genre1 !='' and genre2 != '' and year !='':
             name = name.lower()
-            genre1 = genre1.lower()
-            genre2 = genre2.lower()
-            year = year.lower()
- 
-            genre1_id = self.get_ganreid_by_name(genre1)
-            genre2_id = self.get_ganreid_by_name(genre2)
             
             self.cur.execute(f"""INSERT INTO films VALUES(
-                    '{name}', {genre1_id}, {genre2_id}, {year})""")
+                    '{name}', {genre1}, {genre2}, {year})""")
             
             self.con.commit()
             return True   
@@ -72,8 +71,9 @@ class Database():
     def poisk(self, genre1, genre2, yearot, yeardo):
         genre1 = genre1.lower()
         genre2 = genre2.lower()
-        esli1 ="(genre1= '{genre1}'or genre1='{genre2}')and "
-        esli2 = "(genre2= '{genre2}' or genre2='{genre1}')and "
+        
+        esli1 ="(g1.genres_name = 'боевик' or g1.genres_name = 'триллер') and"
+        esli2 = "(g2.genres_name = 'триллер' or g2.genres_name = 'боевик') and"
         if genre1 == '':
             esli=''
         if genre2== '':
@@ -83,8 +83,13 @@ class Database():
         if yeardo=='' or (not yeardo.isdigit()):
             yeardo=str(9999)
             
-        result =  self.cur.execute(f"""SELECT * FROM films WHERE
-                        {esli}
+        result =  self.cur.execute(f"""SELECT films.title, g1.genres_name, g2.genres_name, films.year
+                        FROM films INNER JOIN genres as g1
+                            ON films.genre1_id = g1.genre_id
+                        INNER JOIN genres as g2
+                            ON films.genre2_id = g2.genre_id
+                        WHERE
+                        {esli1}
                         {esli2}
                         (year >= {yearot} and year<= {yeardo}) ORDER BY title""")
         self.con.commit()

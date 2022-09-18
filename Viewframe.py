@@ -47,27 +47,27 @@ class ViewFrame():
         self.name_entry = tk.Entry(self.left_frame)
         self.name_entry.grid(row=0, column =1, sticky=tk.N, padx=5, pady=5)
 
-        choose_genre1 = tk.StringVar(self.root)
-        choose_genre1.set("Выбрать жанр1")
         self.result_genres = self.db.get_all_genres()
+        self.selection1 = ''
+        self.selection2 = ''
+
+        self.choose_genre1 = tk.StringVar(self.root)
+        self.choose_genre1.set("Выбрать жанр1")
         
-        genre1_optionmenu = tk.OptionMenu(self.left_frame,choose_genre1, *self.result_genres,
-                                          "Добавить", "Удалить",command=lambda *args: self.option_handler(choose_genre1))
-        genre1_optionmenu.config(width=16)
-        genre1_optionmenu.grid(row=1, column =0,sticky=tk.N, padx=5, pady=5)
+        self.genre1_optionmenu = tk.OptionMenu(self.left_frame, self.choose_genre1, *self.result_genres,
+                                          "Добавить", "Удалить",command= self.option_handler1)
+        self.genre1_optionmenu.config(width=16)
+        self.genre1_optionmenu.grid(row=1, column =0,sticky=tk.N, padx=5, pady=5)
         self.genre1_entry=tk.Entry(self.left_frame)
         self.genre1_entry.grid(row=1, column =1,sticky=tk.N, padx=5, pady=5)
         self.genre1_entry.grid_remove()
 
-        choose_genre2 = tk.StringVar(self.root)
-        choose_genre2.set("Выбрать жанр2")
-        genre2_optionmenu=tk.OptionMenu(self.left_frame, choose_genre2, *self.result_genres,
-                                        "Добавить", "Удалить")
-        genre2_optionmenu.config(width=16)
-        genre2_optionmenu.grid(row=2, column =0,sticky=tk.N, padx=5, pady=5)
-##        self.genre2_entry=tk.Entry(self.left_frame)
-##        self.genre2_entry.grid(row=2, column=1,sticky=tk.N, padx=5, pady=5)
-##        self.genre2_entry.grid_remove()
+        self.choose_genre2 = tk.StringVar(self.root)
+        self.choose_genre2.set("Выбрать жанр2")
+        
+        self.genre2_optionmenu=tk.OptionMenu(self.left_frame,self.choose_genre2,*self.result_genres,command= self.option_handler2)
+        self.genre2_optionmenu.config(width=16)
+        self.genre2_optionmenu.grid(row=2, column =0,sticky=tk.N, padx=5, pady=5)
 
         self.add_year_label = tk.Label(self.left_frame, text='Add Год', bg='grey')
         self.add_year_label.grid(row=3, column=0,sticky=tk.N, padx=5, pady=5)
@@ -84,10 +84,56 @@ class ViewFrame():
     
         remove_button.bind('<Button-1>', self.remove)
         append_button.bind('<Button-1>', self.dobavit)
+        self.genre1_entry.bind('<Return>', self.update_genre_to_om)
 
+    def update_om_widget(self, genres):
+        self.genre1_optionmenu.destroy()
+        self.genre2_optionmenu.destroy()
+
+        self.genre1_optionmenu = tk.OptionMenu(self.left_frame, self.choose_genre1, *genres,"Добавить", "Удалить",command=self.option_handler1)
+        self.genre1_optionmenu.config(width=16)
+        self.genre1_optionmenu.grid(row=1, column=0,sticky =tk.N, padx=5, pady=5)
+
+        self.genre2_optionmenu = tk.OptionMenu(self.left_frame, self.choose_genre2, *genres, command=self.option_handler2)
+        self.genre2_optionmenu.config(width=16)
+        self.genre2_optionmenu.grid(row=2, column=0,sticky =tk.N, padx=5, pady=5)
+
+    def update_genre_to_om(self, event):
+        genre = self.genre1_entry.get()
+        if genre.isspace() or genre == '':
+            return 
+        self.genre1_entry.delete(0, 'end')
+        if self.selection1 == "Добавить":
+            self.db.update_genre_table(genre, True)
+        elif self.selection1 == "Удалить":
+            self.db.update_genre_table(genre, False)
+            
+        self.result_genres = self.db.get_all_genres()
+        self.update_om_widget(self.result_genres)
+        
     def updatetime(self):
         self.time_label.config(text=time.strftime('%X'))
         self.root.after(1000, self.updatetime)
+
+    def option_handler1(self, event):
+        self.selection1 = self.choose_genre1.get()
+        print(self.selection1)
+
+        if self.selection1 == "Добавить" or self.selection1 == "Удалить":
+            self.genre1_entry.grid()
+        else:
+            self.genre1_entry.grid_remove()
+
+    def option_handler2(self, event):
+        self.selection2 = self.choose_genre2.get()
+        print(self.selection2)
+            
+    def get_genre_id(self, selection):
+        genre_id = None
+        for i in range(len(self.result_genres)-1):
+            if self.result_genres[i].value[1] == selection:
+                genre_id = self.result_genres[i].value[0]
+        return genre_id
 
     def remove(self, event):
         name = self.name_entry.get()
@@ -97,28 +143,12 @@ class ViewFrame():
     
     def dobavit(self, event):
         name = self.name_entry.get()
-        genre1 = self.genre1_entry.get()
-        genre2 = self.genre2_entry.get()
+        genre1 = self.get_genre_id(self.selection1)
+        genre2 = self.get_genre_id(self.selection2)
         year = self.add_year_entry.get()
         
         self.db.append(name, genre1, genre2, year)
-
-    def option_handler(self, choice):
-        selection = choice.get()
-
-        if selection == "Добавить" or selection == "Удалить":
-            self.genre1_entry.grid()
-        else:
-            self.genre1_entry.grid_remove()
-
-##        for i in range(len(self.result_genres)-1):
-##            if self.result_genres[i].value[1] == selection:
-##                get_genre_id = self.result_genres[i].value[0]
-##                print(get_genre_id)
-            
-            
-        
-          
+   
     def create_rf(self):
         self.right_frame = tk.Frame(self.view_frame, bg = 'white')
         self.right_frame.grid(row=0, column= 1, sticky=tk.E+tk.W+tk.N)
